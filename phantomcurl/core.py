@@ -24,6 +24,7 @@ _OPT_NO_CONTENT          = '--no-content'
 _OPT_REQUEST_RESPONSE    = '--request-response'
 _OPT_POST_FULL           = '--post-full'
 _OPT_CUSTOM_HEADERS_JSON = '--custom-headers-json'
+_OPT_COOKIE              = '--cookie'
 
 
 _MAGIC_STRING = 'MAGIC_8SD6ADEADBEEFD8AA8DS68F8_MAGIC'
@@ -42,8 +43,9 @@ class PhantomCurlError(Exception):
 class PhantomCurl(object):
     TIMEOUT_JS_TO_JOIN_DELTA_SEC = 30.0
 
-    def __init__(self, user_agent=None, cookie_jar=None,
-                 proxy=None, timeout_sec=None,
+    def __init__(self, user_agent=None, cookie_jar=None, cookie=None,
+                 proxy=None, proxy_type=None, proxy_user=None, 
+                 proxy_pass=None, timeout_sec=None,
                  inspect_iframes=False, debug=False, delay=None,
                  with_content=True, with_request_response=False,
                  headers=None):
@@ -54,8 +56,20 @@ class PhantomCurl(object):
         cookie_jar
             File name to store permanent cookies.
 
+        cookie
+            Dictionary with cookies.
+
         proxy
-            HTTP proxy address.
+            proxy address.
+
+        proxy_type
+            proxy type
+            
+        proxy_user
+            proxy user
+            
+        proxy_pass
+            proxy pass
 
         timeout_sec
             Timepout in seconds. If set, then phantomjs javascript timeout is
@@ -95,16 +109,21 @@ class PhantomCurl(object):
         if cookie_jar and not is_writeable(cookie_jar):
             raise PhantomCurlError('Cannot write to "{}"'.format(cookie_jar))
         self._cookie_jar = cookie_jar
+        self._cookie = cookie
         self._debug = debug
         self._delay = delay
         self._inspect_iframes = inspect_iframes
         self._magic_string = _MAGIC_STRING
         self._proxy = proxy
+        self._proxy_type = proxy_type
         self._timeout_sec = timeout_sec
         self._user_agent = user_agent
         self._with_content = with_content
         self._with_request_response = with_request_response
         self._headers = headers
+        self._proxy_auth = None
+        if proxy_user and proxy_pass:
+            self._proxy_auth = "{}:{}".format(proxy_user, proxy_pass)
 
     def fetch(self, url, post_params=None, capture_screen=None):
         """
@@ -144,6 +163,10 @@ class PhantomCurl(object):
             options_bin.append(u'--cookies-file={:s}'.format(path))
         if self._proxy:
             options_bin.append(u'--proxy={:s}'.format(self._proxy))
+        if self._proxy_type:
+            options_bin.append(u'--proxy-type={:s}'.format(self._proxy_type))
+        if self._proxy_auth:
+            options_bin.append(u'--proxy-auth={:s}'.format(self._proxy_auth))
         if self._debug:
             options_bin.append(u'--debug=true')
 #        url_encoded =  urllib.quote(url, safe=u'/:')
@@ -166,6 +189,8 @@ class PhantomCurl(object):
             options_js += [_OPT_POST_FULL, _get_full_post_string(post_params)]
         if self._headers is not None:
             options_js += [_OPT_CUSTOM_HEADERS_JSON, json.dumps(self._headers)]
+        if self._cookie is not None:
+            options_js += [_OPT_COOKIE, json.dumps(self._cookie)]
 
         options_js_str = [str(o) for o in options_js]
         cmds = [PHANTOMJS_BIN] + options_bin + [PHANTOMJS_JS] + options_js_str

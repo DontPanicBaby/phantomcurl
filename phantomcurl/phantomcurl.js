@@ -27,19 +27,21 @@ var OPT_INSPECT_IFRAMES     = '--inspect-iframes';
 var OPT_TIMEOUT_SEC         = '--timeout-sec';
 
 /* Wait additional X seconds */
-var OPT_DELAY_SEC           = '--delay-sec'
+var OPT_DELAY_SEC           = '--delay-sec';
 
 /* do not print content */
-var OPT_NO_CONTENT          = '--no-content'
+var OPT_NO_CONTENT          = '--no-content';
 
 /* capture requests and responses */
-var OPT_REQUEST_RESPONSE    = '--request-response'
+var OPT_REQUEST_RESPONSE    = '--request-response';
 
 /* --post key value --post key2 value */
-var OPT_POST_FULL           = '--post-full'
+var OPT_POST_FULL           = '--post-full';
 
 /* optional custom headers, passed as JSON-ified dictionary */
-var OPT_CUSTOM_HEADERS_JSON = '--custom-headers-json'
+var OPT_CUSTOM_HEADERS_JSON = '--custom-headers-json';
+
+var OPT_CUSTOM_COOKIE_JSON 	= '--cookie';
 
 /*************************************************************************/
 
@@ -96,6 +98,9 @@ var parse_arguments = function() {
                 break;
             case OPT_CUSTOM_HEADERS_JSON:
                 opts.custom_headers = JSON.parse(args.shift());
+                break;
+            case OPT_CUSTOM_COOKIE_JSON:
+                opts.cookie = JSON.parse(args.shift());
                 break;
             default:
                 die('unknown option: ' + x);
@@ -157,7 +162,7 @@ var iframes_deep_inspection = function(page)
 
     });
     return frames_found;
-}
+};
 
 /*********************************  main  ***********************************/
 
@@ -178,6 +183,9 @@ if (g_opts.user_agent !== undefined) {
 
 if (g_opts.custom_headers !== undefined) {
     page.customHeaders = g_opts.custom_headers;
+}
+if (g_opts.cookie !== undefined) {
+    phantom.addCookie(g_opts.cookie);
 }
 
 if (g_opts.with_request_responses == true) {
@@ -203,7 +211,7 @@ var record_error = function(error_message)
         g_output_data.errors = [];
     }
     g_output_data.errors.push(error_message);
-}
+};
 
 
 /* One true exit point. Print the results as JSON and exit phantomjs. */
@@ -273,7 +281,7 @@ page.open(g_opts.url, g_opts.method, g_opts.post_full_str,
         process_page();
     } else {
         console.error('waiting ' + delay_sec + ' seconds');
-        setTimeout(function() { process_page() }, (delay_sec * 1000.0));
+        setTimeout(function() { process_page(); }, (delay_sec * 1000.0));
     }
 });
 
